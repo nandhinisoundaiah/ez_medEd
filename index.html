@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Patient Centered Medication Comprehension Tool</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #1a56db;
+    --blue-dark: #1141a8;
+    --blue-pale: #eff4ff;
+    --green-pale: #ecfdf5;
+    --green: #047857;
+    --red-pale: #fef2f2;
+    --red: #b91c1c;
+    --amber-pale: #fffbeb;
+    --amber: #92400e;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--gray-800);
+    line-height: 1.2;
+  }
+
+  .header-left p {
+    font-size: 14px;
+    color: var(--gray-600);
+    margin-top: 4px;
+  }
+
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--gray-600);
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .lang-toggle:hover { border-color: var(--blue); color: var(--blue); }
+  .lang-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /*  Cards  */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 16px;
+  }
+
+  /*  Stepper  */
+  .stepper {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+  }
+
+  .step {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--gray-400);
+    background: white;
+    border-right: 1px solid var(--gray-200);
+    transition: background 0.2s, color 0.2s;
+    line-height: 1.3;
+  }
+
+  .step:last-child { border-right: none; }
+  .step.active { background: var(--blue); color: white; }
+  .step.complete { background: var(--green-pale); color: var(--green); }
+
+  /*  Med Select  */
+  .select-wrap {
+    position: relative;
+  }
+
+  .select-wrap::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--gray-400);
+    pointer-events: none;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+  }
+
+  select, input[type="text"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--gray-800);
+    background: white;
+    appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+
+  select:focus, input[type="text"]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+  }
+
+  /*  Inputs group  */
+  .input-group { margin-bottom: 14px; }
+
+  /*  Buttons  */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, transform 0.1s;
+    outline: none;
+    text-decoration: none;
+  }
+
+  .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--blue);
+    color: white;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .btn-outline {
+    flex: 1;
+    background: white;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); }
+
+  /*  Med info card  */
+  .med-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+
+  .med-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--blue-pale);
+    color: var(--blue-dark);
+    margin-bottom: 20px;
+  }
+
+  .med-rows { display: flex; flex-direction: column; gap: 14px; }
+
+  .med-row {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-100);
+    align-items: flex-start;
+  }
+
+  .med-row-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .icon-purpose { background: #eff4ff; }
+  .icon-how { background: #ecfdf5; }
+  .icon-side { background: #fffbeb; }
+
+  .med-row-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-400);
+    margin-bottom: 3px;
+  }
+
+  .dosage-warning {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--amber-pale);
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    font-size: 16px;
+    color: var(--amber);
+    line-height: 1.5;
+  }
+
+  .med-row-value {
+    font-size: 15px;
+    color: var(--gray-800);
+    line-height: 1.5;
+  }
+
+  /*  QR Panel  */
+  #qrPanel {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qr-panel-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #qrCanvas {
+    border-radius: 8px;
+    display: block;
+  }
+
+  .qr-caption {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+  }
+
+  .qr-url {
+    font-size: 11px;
+    color: var(--gray-400);
+    word-break: break-all;
+    text-align: center;
+  }
+
+  /*  Score display  */
+  .score-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 10px;
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+
+  .score-ok { background: var(--green-pale); color: var(--green); }
+  .score-low { background: var(--amber-pale); color: var(--amber); }
+
+  /*  Final result  */
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .result-stat {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: center;
+  }
+
+  .result-stat-label { font-size: 11px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .result-stat-value { font-size: 26px; font-weight: 600; color: var(--gray-800); }
+  .result-stat-value.positive { color: var(--green); }
+
+  .result-message {
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .result-message.good { background: var(--green-pale); color: var(--green); border: 1px solid #a7f3d0; }
+  .result-message.neutral { background: var(--amber-pale); color: var(--amber); border: 1px solid #fcd34d; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+
+  .status-badge.sent { background: var(--green-pale); color: var(--green); }
+  .status-badge.error { background: var(--red-pale); color: var(--red); }
+
+  /*  AI Loading state  */
+  .ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    background: var(--blue-pale);
+    border-radius: var(--radius-sm);
+    border: 1px solid #c7d7f9;
+    font-size: 13px;
+    color: var(--blue-dark);
+    margin-top: 8px;
+  }
+
+  .ai-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #c7d7f9;
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-disclaimer {
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--blue-pale);
+    color: var(--blue-dark);
+    margin-bottom: 12px;
+  }
+
+  /*  Autocomplete suggestions  */
+  .suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    list-style: none;
+    z-index: 50;
+    overflow: hidden;
+    display: none;
+  }
+
+  .suggestions.open { display: block; }
+
+  .suggestions li {
+    padding: 10px 14px;
+    font-size: 15px;
+    cursor: pointer;
+    color: var(--gray-800);
+    border-bottom: 1px solid var(--gray-100);
+    transition: background 0.1s;
+  }
+
+  .suggestions li:last-child { border-bottom: none; }
+  .suggestions li:hover, .suggestions li.active { background: var(--blue-pale); color: var(--blue); }
+
+  .suggestions li mark {
+    background: none;
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .med-confirmed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  .med-confirmed .clear-btn {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .med-confirmed .clear-btn:hover { color: var(--red); background: var(--red-pale); }
+  .input-voice-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-voice-wrap input[type="text"] {
+    flex: 1;
+    padding-right: 44px;
+  }
+
+  .mic-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+    outline: none;
+  }
+
+  .mic-btn:hover { background: var(--blue-pale); color: var(--blue); }
+  .mic-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .mic-btn.listening {
+    background: #fee2e2;
+    color: var(--red);
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(185, 28, 28, 0); }
+  }
+
+  /* Voice selector row */
+  .select-voice-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .select-voice-row .select-wrap {
+    flex: 1;
+  }
+
+  .mic-btn-select {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    outline: none;
+  }
+
+  .mic-btn-select:hover { background: var(--blue-pale); color: var(--blue); border-color: var(--blue); }
+  .mic-btn-select:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .mic-btn-select.listening {
+    background: #fee2e2;
+    color: var(--red);
+    border-color: var(--red);
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  .voice-hint {
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 6px;
+  }
+
+  .no-voice-support .mic-btn,
+  .no-voice-support .mic-btn-select { display: none; }
+
+  /*  Hidden/Shown  */
+  .hidden { display: none !important; }
+
+  /*  Divider  */
+  .divider { border: none; border-top: 1px solid var(--gray-100); margin: 20px 0; }
+
+  /*  Toast  */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+    z-index: 99;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Patient Centered Medication Guide</h1>
+      <p>Learn about your medicine before and after</p>
+    </div>
+    <button class="lang-toggle" id="langBtn" aria-label="Switch language">
+      <span id="langFlag">🌐</span>
+      <span id="langLabel">Español</span>
+    </button>
+  </div>
+
+  <!-- Global disclaimer -->
+  <div style="margin:4px 16px 12px;padding:8px 14px;background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;font-size:13px;line-height:1.5;">
+    <p style="margin:0 0 2px;"><strong style="color:#b91c1c;">⚠ This information is general. Always follow your provider's instructions.</strong></p>
+    <p style="margin:0;color:#7f1d1d;">Use this page only to get a simple explanation about your medication.</p>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="stepper" role="progressbar" aria-label="Steps">
+    <div class="step active" id="step1">1. Choose &amp; Pre-test</div>
+    <div class="step" id="step2">2. Learn</div>
+    <div class="step" id="step3">3. Post-test</div>
+    <div class="step" id="step4">4. Results</div>
+  </div>
+
+  <!-- Step 1: Select med + Pre-test -->
+  <div id="pane1">
+    <div class="card">
+      <p class="card-title" id="selectLabel">Choose your medication</p>
+      <label for="medInput" id="medSelectLabel">Medication</label>
+      <div class="select-voice-row">
+        <div style="flex:1;position:relative;">
+          <input type="text" id="medInput" autocomplete="off" placeholder="Type or say a medication name…" aria-autocomplete="list" aria-controls="medSuggestions" />
+          <ul id="medSuggestions" class="suggestions" role="listbox" aria-label="Medication suggestions"></ul>
+        </div>
+        <button class="mic-btn-select" id="micSelect" title="Say medication name" aria-label="Say medication name">🎤</button>
+      </div>
+      <p class="voice-hint" id="voiceHintSelect">Type or say a medication name to select it</p>
+    </div>
+
+    <div class="card" id="preTestCard">
+      <p class="card-title" id="preTitle">Before you read — what do you know?</p>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:18px;" id="preSubtitle">Answer as best you can. There are no wrong answers — this is just a baseline.</p>
+
+      <div class="input-group">
+        <label for="pre1" id="pre1Label">What is this medicine for?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="pre1" autocomplete="off" />
+          <button class="mic-btn" data-target="pre1" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="pre2" id="pre2Label">How will you take it?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="pre2" autocomplete="off" />
+          <button class="mic-btn" data-target="pre2" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="pre3" id="pre3Label">Any side effects you know of?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="pre3" autocomplete="off" />
+          <button class="mic-btn" data-target="pre3" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="preSubmitBtn" disabled>
+        <span id="preSubmitLabel">Submit &amp; continue</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Med card -->
+  <div id="pane2" class="hidden">
+    <div class="card">
+      <div class="med-name" id="medName"></div>
+      <div class="med-badge" id="medBadge">Prescription medication</div>
+      <div class="med-rows">
+        <div class="med-row">
+          <div class="med-row-icon icon-purpose">💊</div>
+          <div>
+            <div class="med-row-label" id="labelPurpose">What it does</div>
+            <div class="med-row-value" id="valPurpose"></div>
+          </div>
+        </div>
+        <div class="med-row">
+          <div class="med-row-icon icon-how">📋</div>
+          <div style="flex:1;">
+            <div class="med-row-label" id="labelHow"> How To Take (General Dosage Information) </div>
+            <div class="med-row-value" id="valHow"></div>
+            <div id="dosageWarningBox" class="dosage-warning hidden">⚠️ <span id="valDosageWarning"></span></div>
+          </div>
+        </div>
+        <div class="med-row">
+          <div class="med-row-icon icon-side">⚠️</div>
+          <div>
+            <div class="med-row-label" id="labelSide">Side effects</div>
+            <div class="med-row-value" id="valSide"></div>
+          </div>
+        </div>
+        <div id="sideWarningBox" class="dosage-warning hidden">⚠️ <span id="valSideWarning"></span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" id="listenBtn" aria-label="Listen to medication info">
+          🔊 <span id="listenLabel">Listen</span>
+        </button>
+        <button class="btn btn-outline" id="printBtn" aria-label="Print this medication card">
+          🖨 <span id="printLabel">Print</span>
+        </button>
+        <button class="btn btn-outline" id="qrBtn" aria-label="Generate QR code to share page">
+          📱 <span id="qrLabel">QR Code</span>
+        </button>
+
+      </div>
+
+      <div id="qrPanel" class="hidden">
+        <div class="qr-panel-inner">
+          <canvas id="qrCanvas" aria-label="QR code to open this page"></canvas>
+          <div class="qr-caption" id="qrCaption">Scan to open on another device</div>
+          <div class="qr-url" id="qrUrl"></div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+      <button class="btn btn-primary" id="toPostBtn">
+        <span id="toPostLabel">Take the post-test →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Post-test -->
+  <div id="pane3" class="hidden">
+    <div class="card">
+      <p class="card-title" id="postTitle">Now let's see what you learned</p>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:18px;" id="postSubtitle">Answer in your own words — no need to be exact.</p>
+
+      <div class="input-group">
+        <label for="post1" id="post1Label">What is this medicine for?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="post1" autocomplete="off" />
+          <button class="mic-btn" data-target="post1" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="post2" id="post2Label">How will you take it?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="post2" autocomplete="off" />
+          <button class="mic-btn" data-target="post2" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="post3" id="post3Label">Any side effects?</label>
+        <div class="input-voice-wrap">
+          <input type="text" id="post3" autocomplete="off" />
+          <button class="mic-btn" data-target="post3" title="Speak your answer" aria-label="Speak answer">🎤</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="postSubmitBtn">
+        <span id="postSubmitLabel">See my results</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 4: Results -->
+  <div id="pane4" class="hidden">
+    <div class="card">
+      <p class="card-title" id="resultsTitle">Your results</p>
+
+      <div class="result-grid">
+        <div class="result-stat">
+          <div class="result-stat-label" id="preLabel">Before</div>
+          <div class="result-stat-value" id="preVal">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-label" id="postLabel">After</div>
+          <div class="result-stat-value" id="postVal">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-label" id="improvLabel">Change</div>
+          <div class="result-stat-value positive" id="improvVal">—</div>
+        </div>
+      </div>
+
+      <div class="result-message" id="resultMessage"></div>
+
+      <hr class="divider" />
+
+      <div id="sheetStatus"></div>
+
+      <button class="btn btn-primary" id="restartBtn" style="margin-top:8px;">
+        <span id="restartLabel">Start over</span>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*  Data  */
+/*  Data — 30 most common community clinic medications ── */
+const MEDS = {
+  metformin:{en:{name:"Metformin",purpose:["Controls blood sugar in type 2 diabetes"],how:["Take 500–850 mg with food, once or twice a day — your doctor will set your exact dose","Always take with a meal to prevent stomach upset","Do not skip doses; try to take at the same times every day"],dosageWarning:"Always take exactly as prescribed.",side:["Upset stomach or nausea — usually gets better after a few weeks","Loose stools or diarrhea, especially when first starting"]},es:{name:"Metformina",purpose:["Controla el azúcar en la sangre en la diabetes tipo 2"],how:["Tome 500–850 mg con comida, una o dos veces al día — su médico fijará su dosis exacta","Siempre tómelo con una comida para evitar malestar estomacal","No omita dosis; trate de tomarla a la misma hora todos los días"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Malestar estomacal o náuseas — generalmente mejora después de unas semanas","Diarrea o heces sueltas, especialmente al comenzar"]}},
+  glipizide:{en:{name:"Glipizide",purpose:["Lowers blood sugar in type 2 diabetes by helping the pancreas make more insulin"],how:["Take 5 mg once a day, 30 minutes before breakfast","Can be taken with or without food — take at the same time each day","Check your blood sugar regularly as directed"],dosageWarning:"Always take exactly as prescribed.",side:["Low blood sugar (shakiness, sweating, dizziness) — eat a snack if this happens","Upset stomach or nausea"]},es:{name:"Glipizida",purpose:["Baja el azúcar en la sangre en la diabetes tipo 2 ayudando al páncreas a producir más insulina"],how:["Tome 5 mg una vez al día, 30 minutos antes del desayuno","Puede tomarse con o sin comida — a la misma hora cada día","Revise su azúcar en sangre regularmente como le indique su médico"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Azúcar baja (temblores, sudoración, mareo) — coma algo si esto ocurre","Malestar estomacal o náuseas"]}},
+  lisinopril:{en:{name:"Lisinopril",purpose:["Lowers high blood pressure","Protects the heart and kidneys from damage"],how:["Take 10 mg once a day — your doctor may adjust the dose over time","Can be taken with or without food, at the same time each day","Rise slowly from sitting or lying down to avoid dizziness"],dosageWarning:"Always take exactly as prescribed.",side:["Dry cough — tell your doctor if it bothers you","Dizziness, especially when standing up quickly"]},es:{name:"Lisinopril",purpose:["Baja la presión arterial alta","Protege el corazón y los riñones"],how:["Tome 10 mg una vez al día — su médico puede ajustar la dosis con el tiempo","Puede tomarse con o sin comida, a la misma hora cada día","Levántese despacio para evitar el mareo"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Tos seca — avise a su médico si le molesta","Mareo, especialmente al levantarse rápido"]}},
+  amlodipine:{en:{name:"Amlodipine",purpose:["Lowers high blood pressure","Relieves chest pain by relaxing blood vessels"],how:["Take 5 mg once a day, with or without food","Take at the same time every day","Do not stop suddenly without talking to your doctor"],dosageWarning:"Always take exactly as prescribed.",side:["Swelling in your feet or ankles","Flushing (feeling warm or red in the face)","Dizziness or headache"]},es:{name:"Amlodipino",purpose:["Baja la presión arterial alta","Alivia el dolor de pecho relajando los vasos sanguíneos"],how:["Tome 5 mg una vez al día, con o sin comida","Tómelo a la misma hora todos los días","No lo deje de repente sin hablar con su médico"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Hinchazón en los pies o tobillos","Rubor (sensación de calor en la cara)","Mareo o dolor de cabeza"]}},
+  losartan:{en:{name:"Losartan",purpose:["Lowers high blood pressure","Protects the kidneys in people with diabetes"],how:["Take 50 mg once a day, with or without food","Take at the same time every day","Stay well hydrated — drink plenty of water"],dosageWarning:"Always take exactly as prescribed.",side:["Dizziness, especially when standing up quickly","Back pain","Runny nose or congestion"]},es:{name:"Losartán",purpose:["Baja la presión arterial alta","Protege los riñones en personas con diabetes"],how:["Tome 50 mg una vez al día, con o sin comida","Tómelo a la misma hora todos los días","Manténgase bien hidratado — beba suficiente agua"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Mareo, especialmente al levantarse rápido","Dolor de espalda","Nariz tapada o que moquea"]}},
+  hydrochlorothiazide:{en:{name:"Hydrochlorothiazide (HCTZ)",purpose:["Lowers high blood pressure by helping the kidneys remove extra salt and water"],how:["Take 12.5–25 mg once a day, with or without food","Take in the morning so it does not disturb your sleep","Drink enough water throughout the day"],dosageWarning:"Always take exactly as prescribed.",side:["Urinating more often, especially in the first few days","Dizziness or lightheadedness","Low potassium — eat bananas or oranges regularly"]},es:{name:"Hidroclorotiazida (HCTZ)",purpose:["Baja la presión arterial alta ayudando a los riñones a eliminar sal y agua extra"],how:["Tome 12.5–25 mg una vez al día, con o sin comida","Tómelo por la mañana para no interrumpir el sueño","Beba suficiente agua durante el día"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Orinar con más frecuencia, especialmente los primeros días","Mareo o sensación de desmayo","Potasio bajo — coma bananas o naranjas regularmente"]}},
+  metoprolol:{en:{name:"Metoprolol",purpose:["Lowers high blood pressure and slows a fast heartbeat","Protects the heart after a heart attack"],how:["Take 25–50 mg once or twice a day — your doctor will set your dose","Take with or right after a meal","Do not stop suddenly — taper off gradually with your doctor's guidance"],dosageWarning:"Never stop this medicine suddenly. Always take exactly as prescribed.",side:["Feeling tired or sluggish","Slow heartbeat","Dizziness"]},es:{name:"Metoprolol",purpose:["Baja la presión arterial y reduce un latido cardíaco rápido","Protege el corazón después de un ataque cardíaco"],how:["Tome 25–50 mg una o dos veces al día — su médico fijará su dosis","Tómelo con o justo después de una comida","No lo deje de repente — reduzca la dosis gradualmente con su médico"],dosageWarning:"Nunca deje este medicamento de repente. Tómelo siempre como se le indicó.",side:["Cansancio o sensación de lentitud","Latido cardíaco lento","Mareo"]}},
+  atorvastatin:{en:{name:"Atorvastatin (Lipitor)",purpose:["Lowers bad cholesterol and reduces the risk of heart attack and stroke"],how:["Take 10–20 mg once a day, with or without food","Can be taken at any time of day — pick one time and stick to it","Avoid large amounts of grapefruit or grapefruit juice"],dosageWarning:"Always take exactly as prescribed.",side:["Muscle aches or weakness — tell your doctor right away if severe","Upset stomach or gas","Headache"]},es:{name:"Atorvastatina (Lipitor)",purpose:["Reduce el colesterol malo y el riesgo de ataque cardíaco y derrame cerebral"],how:["Tome 10–20 mg una vez al día, con o sin comida","Puede tomarse a cualquier hora — elija una y manténgala","Evite comer mucha toronja o tomar su jugo"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Dolores o debilidad muscular — avise a su médico de inmediato si es grave","Malestar estomacal o gases","Dolor de cabeza"]}},
+  simvastatin:{en:{name:"Simvastatin",purpose:["Lowers bad cholesterol to protect the heart"],how:["Take 20–40 mg once a day in the evening or at bedtime","Take with or without food","Avoid grapefruit juice — it can increase the risk of side effects"],dosageWarning:"Always take exactly as prescribed.",side:["Muscle pain or weakness — stop and call your doctor if severe","Upset stomach","Headache"]},es:{name:"Simvastatina",purpose:["Reduce el colesterol malo para proteger el corazón"],how:["Tome 20–40 mg una vez al día por la tarde o al acostarse","Con o sin comida","Evite el jugo de toronja — puede aumentar el riesgo de efectos secundarios"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Dolor o debilidad muscular — deje de tomarlo y llame a su médico si es grave","Malestar estomacal","Dolor de cabeza"]}},
+  albuterol:{en:{name:"Albuterol (Rescue Inhaler)",purpose:["Opens the airways quickly during asthma or breathing difficulty","Used as a rescue inhaler — not for daily prevention"],how:["Shake well, then inhale 1–2 puffs (90 mcg each) as needed","Wait at least 1 minute between puffs if you need a second one","Rinse your mouth with water after use"],dosageWarning:"Always take exactly as prescribed.",side:["Shaky hands or jitteriness — usually brief","Faster heartbeat — tell your doctor if it persists"]},es:{name:"Albuterol (Inhalador de rescate)",purpose:["Abre las vías respiratorias rápidamente durante el asma o dificultad para respirar","Se usa como inhalador de rescate — no para prevención diaria"],how:["Agite bien, luego inhale 1–2 inhalaciones (90 mcg cada una) según sea necesario","Espere al menos 1 minuto entre inhalaciones si necesita una segunda","Enjuáguese la boca con agua después de usar"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Manos temblorosas o nerviosismo — generalmente breve","Latido más rápido — avise a su médico si persiste"]}},
+  fluticasone_inhaler:{en:{name:"Fluticasone Inhaler (Flovent)",purpose:["Prevents asthma attacks by reducing airway inflammation — used every day, not for sudden attacks"],how:["Inhale 1–2 puffs twice a day, morning and evening","Always rinse your mouth with water and spit after each use","Do not stop using it even if you feel well — it works best when used regularly"],dosageWarning:"Always take exactly as prescribed.",side:["Hoarse voice or throat irritation","White patches in your mouth — rinse mouth after each use to prevent this","Headache"]},es:{name:"Fluticasona Inhalador (Flovent)",purpose:["Previene los ataques de asma — se usa todos los días, no para ataques repentinos"],how:["Inhale 1–2 inhalaciones dos veces al día, mañana y noche","Siempre enjuáguese la boca con agua y escupa después de cada uso","No deje de usarlo aunque se sienta bien — funciona mejor con uso regular"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Voz ronca o irritación de garganta","Manchas blancas en la boca — enjuáguese la boca para prevenirlo","Dolor de cabeza"]}},
+  montelukast:{en:{name:"Montelukast (Singulair)",purpose:["Prevents asthma symptoms and treats seasonal allergies"],how:["Take 10 mg once a day in the evening, with or without food","Swallow the tablet whole — do not chew","Take it every day, even if you feel fine"],dosageWarning:"Always take exactly as prescribed.",side:["Headache","Upset stomach","Mood changes or vivid dreams — tell your doctor if this happens"]},es:{name:"Montelukast (Singulair)",purpose:["Previene los síntomas del asma y trata las alergias estacionales"],how:["Tome 10 mg una vez al día por la noche, con o sin comida","Trague el comprimido entero — no lo mastique","Tómelo todos los días, aunque se sienta bien"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Dolor de cabeza","Malestar estomacal","Cambios de humor o sueños vívidos — avise a su médico si ocurre"]}},
+  sertraline:{en:{name:"Sertraline (Zoloft)",purpose:["Treats depression, anxiety, and panic attacks","Helps improve mood, sleep, and daily functioning"],how:["Take 50 mg once a day, with or without food","It may take 2–4 weeks before you feel the full benefit — keep taking it","Do not stop suddenly — ask your doctor how to safely taper off"],dosageWarning:"Never stop this medicine suddenly. Always take exactly as prescribed.",side:["Nausea or upset stomach — often improves after a few weeks","Trouble sleeping or feeling drowsy","Dry mouth"]},es:{name:"Sertralina (Zoloft)",purpose:["Trata la depresión, la ansiedad y los ataques de pánico","Ayuda a mejorar el estado de ánimo, el sueño y el funcionamiento diario"],how:["Tome 50 mg una vez al día, con o sin comida","Puede tomar 2–4 semanas sentir el beneficio completo — siga tomándolo","No lo deje de repente — pregúntele a su médico cómo reducirlo"],dosageWarning:"Nunca deje este medicamento de repente. Tómelo siempre como se le indicó.",side:["Náuseas o malestar estomacal — suele mejorar después de unas semanas","Dificultad para dormir o somnolencia","Boca seca"]}},
+  fluoxetine:{en:{name:"Fluoxetine (Prozac)",purpose:["Treats depression, anxiety, and panic disorder"],how:["Take 20 mg once a day in the morning, with or without food","Full benefit may take 4–6 weeks — do not stop early","Do not stop suddenly — taper off gradually with your doctor"],dosageWarning:"Never stop this medicine suddenly. Always take exactly as prescribed.",side:["Nausea or upset stomach, especially the first few weeks","Trouble sleeping or feeling restless","Headache"]},es:{name:"Fluoxetina (Prozac)",purpose:["Trata la depresión, la ansiedad y el trastorno de pánico"],how:["Tome 20 mg una vez al día por la mañana, con o sin comida","El beneficio completo puede tardar 4–6 semanas — no lo deje antes","No lo deje de repente — reduzca la dosis gradualmente con su médico"],dosageWarning:"Nunca deje este medicamento de repente. Tómelo siempre como se le indicó.",side:["Náuseas o malestar estomacal, especialmente las primeras semanas","Dificultad para dormir o sensación de inquietud","Dolor de cabeza"]}},
+  escitalopram:{en:{name:"Escitalopram (Lexapro)",purpose:["Treats depression and generalized anxiety","Helps improve mood, sleep, and reduce worry"],how:["Take 10 mg once a day, with or without food","Can be taken morning or evening — pick one time and stay consistent","It may take 1–4 weeks before you notice improvement"],dosageWarning:"Never stop this medicine suddenly. Always take exactly as prescribed.",side:["Nausea or upset stomach","Trouble sleeping or drowsiness","Dry mouth or increased sweating"]},es:{name:"Escitalopram (Lexapro)",purpose:["Trata la depresión y la ansiedad generalizada","Ayuda a mejorar el estado de ánimo, el sueño y a reducir la preocupación"],how:["Tome 10 mg una vez al día, con o sin comida","Puede tomarse por la mañana o por la noche — elija una hora y manténgala","Puede tomar 1–4 semanas notar mejoría"],dosageWarning:"Nunca deje este medicamento de repente. Tómelo siempre como se le indicó.",side:["Náuseas o malestar estomacal","Dificultad para dormir o somnolencia","Boca seca o sudoración excesiva"]}},
+  omeprazole:{en:{name:"Omeprazole (Prilosec)",purpose:["Reduces stomach acid to treat heartburn, acid reflux, and stomach ulcers"],how:["Take 20 mg once a day, 30–60 minutes before your first meal","Swallow the capsule whole — do not crush or chew","Take at the same time every morning for best results"],dosageWarning:"Always take exactly as prescribed.",side:["Headache","Nausea or stomach pain","Diarrhea or constipation"]},es:{name:"Omeprazol (Prilosec)",purpose:["Reduce el ácido estomacal para tratar la acidez, el reflujo y las úlceras gástricas"],how:["Tome 20 mg una vez al día, 30–60 minutos antes de su primera comida","Trague la cápsula entera — no la triture ni mastique","Tómelo a la misma hora cada mañana para mejores resultados"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Dolor de cabeza","Náuseas o dolor de estómago","Diarrea o estreñimiento"]}},
+  amoxicillin:{en:{name:"Amoxicillin",purpose:["Treats bacterial infections including ear infections, strep throat, and pneumonia"],how:["Take 500 mg every 8 hours (three times a day), with or without food","Finish the entire prescription even if you feel better — stopping early can cause the infection to return","Space doses evenly throughout the day"],dosageWarning:"Always take exactly as prescribed. Finish the full course.",side:["Diarrhea or upset stomach","Skin rash — stop and call your doctor if you get hives or trouble breathing","Nausea"]},es:{name:"Amoxicilina",purpose:["Trata infecciones bacterianas como infecciones de oído, garganta y neumonía"],how:["Tome 500 mg cada 8 horas (tres veces al día), con o sin comida","Termine toda la receta aunque se sienta mejor — parar antes puede hacer que la infección regrese","Espacie las dosis uniformemente durante el día"],dosageWarning:"Tómelo siempre exactamente como se le indicó. Termine el curso completo.",side:["Diarrea o malestar estomacal","Sarpullido — deje de tomarlo y llame a su médico si tiene urticaria o dificultad para respirar","Náuseas"]}},
+  azithromycin:{en:{name:"Azithromycin (Z-Pack)",purpose:["Treats bacterial infections including sinus infections, ear infections, and pneumonia"],how:["Take 500 mg on Day 1, then 250 mg once a day on Days 2–5","Take with or without food — finish all the pills","Take at the same time each day"],dosageWarning:"Always take exactly as prescribed. Finish the full course.",side:["Diarrhea or loose stools","Nausea or upset stomach","Stomach cramps"]},es:{name:"Azitromicina (Z-Pack)",purpose:["Trata infecciones bacterianas como sinusitis, otitis y neumonía"],how:["Tome 500 mg el Día 1, luego 250 mg una vez al día los Días 2–5","Con o sin comida — termine todas las pastillas","Tómelo a la misma hora cada día"],dosageWarning:"Tómelo siempre exactamente como se le indicó. Termine el curso completo.",side:["Diarrea o heces sueltas","Náuseas o malestar estomacal","Cólicos estomacales"]}},
+  levothyroxine:{en:{name:"Levothyroxine (Synthroid)",purpose:["Replaces thyroid hormone when the thyroid does not make enough","Treats hypothyroidism (underactive thyroid)"],how:["Take your dose once a day, 30–60 minutes before breakfast on an empty stomach","Swallow with a full glass of water","Take at the same time every day — consistency is very important"],dosageWarning:"Always take exactly as prescribed. Do not change brands without telling your doctor.",side:["Hair thinning when first starting — usually improves with time","If dose is too high: fast heartbeat, sweating, or trouble sleeping","If dose is too low: fatigue, weight gain, or feeling cold"]},es:{name:"Levotiroxina (Synthroid)",purpose:["Reemplaza la hormona tiroidea cuando la tiroides no produce suficiente","Trata el hipotiroidismo (tiroides poco activa)"],how:["Tome su dosis una vez al día, 30–60 minutos antes del desayuno con el estómago vacío","Trague con un vaso lleno de agua","Tómelo a la misma hora todos los días — la consistencia es muy importante"],dosageWarning:"Tómelo siempre exactamente como se le indicó. No cambie de marca sin decírselo a su médico.",side:["Adelgazamiento del cabello al comenzar — suele mejorar con el tiempo","Si la dosis es muy alta: latido rápido, sudoración o insomnio","Si la dosis es muy baja: cansancio, aumento de peso o sensación de frío"]}},
+  aspirin_81:{en:{name:"Aspirin 81 mg (Low-Dose)",purpose:["Reduces the risk of heart attack and stroke","Prevents blood clots from forming in arteries"],how:["Take 81 mg once a day with food or a full glass of water","Take at the same time every day","Do not stop taking it without talking to your doctor first"],dosageWarning:"Do not stop aspirin suddenly if prescribed — this can increase your risk of heart attack.",side:["Upset stomach or heartburn — take with food to help","Increased risk of bleeding","Ringing in the ears at higher doses"]},es:{name:"Aspirina 81 mg (Dosis baja)",purpose:["Reduce el riesgo de ataque cardíaco y derrame cerebral","Previene la formación de coágulos de sangre en las arterias"],how:["Tome 81 mg una vez al día con comida o un vaso lleno de agua","Tómelo a la misma hora todos los días","No deje de tomarlo sin hablar primero con su médico"],dosageWarning:"No deje la aspirina de repente si su médico la recetó — puede aumentar el riesgo de ataque cardíaco.",side:["Malestar estomacal o acidez — tómelo con comida","Mayor riesgo de sangrado","Zumbido en los oídos a dosis más altas"]}},
+  warfarin:{en:{name:"Warfarin (Coumadin)",purpose:["Prevents dangerous blood clots","Treats existing blood clots in the legs or lungs"],how:["Take exactly the dose your doctor prescribed, at the same time each day","Take with or without food — keep your diet consistent week to week","You will need regular blood tests (INR) to make sure the dose is right"],dosageWarning:"This medicine requires regular blood monitoring. Never change your dose without your doctor's instruction.",side:["Increased risk of bleeding — report any unusual bruising or bleeding","Avoid major changes in vitamin K foods (spinach, kale, broccoli)","Call your doctor right away if you see blood in urine or stool"]},es:{name:"Warfarina (Coumadin)",purpose:["Previene coágulos de sangre peligrosos","Trata coágulos de sangre existentes en las piernas o pulmones"],how:["Tome exactamente la dosis que su médico recetó, a la misma hora cada día","Con o sin comida — mantenga su dieta consistente semana a semana","Necesitará análisis de sangre regulares (INR) para verificar la dosis"],dosageWarning:"Este medicamento requiere monitoreo regular de sangre. Nunca cambie su dosis sin instrucción de su médico.",side:["Mayor riesgo de sangrado — informe cualquier moretón o sangrado inusual","Evite cambios importantes en alimentos con vitamina K (espinacas, col rizada, brócoli)","Llame a su médico de inmediato si ve sangre en la orina o las heces"]}},
+  furosemide:{en:{name:"Furosemide (Lasix)",purpose:["Removes extra fluid from the body to treat swelling caused by heart failure or kidney disease"],how:["Take 20–40 mg once a day in the morning — your doctor will set your dose","Take in the morning so frequent urination does not disturb your sleep","Weigh yourself daily — call your doctor if you gain more than 2–3 pounds overnight"],dosageWarning:"Always take exactly as prescribed.",side:["Frequent urination, especially in the first few hours","Dizziness or lightheadedness when standing","Low potassium — eat bananas or potatoes regularly"]},es:{name:"Furosemida (Lasix)",purpose:["Elimina el exceso de líquido del cuerpo para tratar la hinchazón por insuficiencia cardíaca o enfermedad renal"],how:["Tome 20–40 mg una vez al día por la mañana — su médico fijará su dosis","Tómelo por la mañana para que la orina frecuente no interrumpa el sueño","Pésese diariamente — llame a su médico si aumenta más de 1–1.5 kg de la noche a la mañana"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Orina frecuente, especialmente en las primeras horas","Mareo o sensación de desmayo al levantarse","Potasio bajo — coma bananas o papas regularmente"]}},
+  gabapentin:{en:{name:"Gabapentin (Neurontin)",purpose:["Treats nerve pain — burning, shooting, or tingling sensations","Also used to prevent seizures"],how:["Take 300 mg three times a day — your doctor will set and adjust your dose","Take with or without food at evenly spaced times throughout the day","Do not stop suddenly — reduce the dose gradually with your doctor's help"],dosageWarning:"Never stop this medicine suddenly. Always take exactly as prescribed.",side:["Drowsiness or dizziness — avoid driving until you know how it affects you","Swelling in your hands or feet","Blurred vision or clumsiness"]},es:{name:"Gabapentina (Neurontin)",purpose:["Trata el dolor de nervios — sensaciones de ardor, punzadas o hormigueo","También se usa para prevenir convulsiones"],how:["Tome 300 mg tres veces al día — su médico fijará y ajustará su dosis","Con o sin comida, a horas espaciadas uniformemente durante el día","No lo deje de repente — reduzca la dosis gradualmente con su médico"],dosageWarning:"Nunca deje este medicamento de repente. Tómelo siempre como se le indicó.",side:["Somnolencia o mareo — evite manejar hasta saber cómo le afecta","Hinchazón en manos o pies","Visión borrosa o torpeza"]}},
+  ibuprofen:{en:{name:"Ibuprofen (Advil / Motrin)",purpose:["Relieves mild to moderate pain, fever, and inflammation","Used for headaches, arthritis, muscle aches, and cramps"],how:["Take 200–400 mg every 4–6 hours as needed — do not exceed 1,200 mg per day","Always take with food or milk to protect your stomach","Drink a full glass of water with each dose"],dosageWarning:"Do not take more than directed. Long-term use can harm your stomach and kidneys.",side:["Upset stomach or heartburn","Dizziness","Increased blood pressure with long-term use"]},es:{name:"Ibuprofeno (Advil / Motrin)",purpose:["Alivia el dolor leve a moderado, la fiebre y la inflamación","Se usa para dolores de cabeza, artritis, dolores musculares y cólicos"],how:["Tome 200–400 mg cada 4–6 horas según sea necesario — no exceda 1,200 mg por día","Siempre tómelo con comida o leche para proteger el estómago","Beba un vaso lleno de agua con cada dosis"],dosageWarning:"No tome más de lo indicado. El uso prolongado puede dañar el estómago y los riñones.",side:["Malestar estomacal o acidez","Mareo","Presión arterial alta con uso prolongado"]}},
+  cetirizine:{en:{name:"Cetirizine (Zyrtec)",purpose:["Relieves allergy symptoms — runny nose, sneezing, itchy eyes, and skin itching"],how:["Take 10 mg once a day, with or without food","Works best when taken at the same time each day","Take in the evening if it makes you drowsy"],dosageWarning:"Always take exactly as prescribed.",side:["Drowsiness in some people — start with an evening dose","Dry mouth","Headache"]},es:{name:"Cetirizina (Zyrtec)",purpose:["Alivia los síntomas de alergia — nariz que moquea, estornudos, ojos con picazón y comezón en la piel"],how:["Tome 10 mg una vez al día, con o sin comida","Funciona mejor cuando se toma a la misma hora cada día","Tómelo por la noche si le causa somnolencia"],dosageWarning:"Tómelo siempre exactamente como se le indicó.",side:["Somnolencia en algunas personas — comience con una dosis nocturna","Boca seca","Dolor de cabeza"]}},
+  vitamin_d:{en:{name:"Vitamin D3",purpose:["Treats or prevents vitamin D deficiency","Supports bone health, immune function, and muscle strength"],how:["Take 1,000–2,000 IU once a day with your largest meal for best absorption","Swallow with water","Your doctor will tell you how long to take it based on your blood levels"],dosageWarning:"Always take exactly as prescribed. Do not take more than directed.",side:["Usually well tolerated at recommended doses","At very high doses: nausea, weakness, or frequent urination","Follow your doctor's recommended dose to stay safe"]},es:{name:"Vitamina D3",purpose:["Trata o previene la deficiencia de vitamina D","Apoya la salud ósea, la función inmune y la fuerza muscular"],how:["Tome 1,000–2,000 UI una vez al día con su comida más grande para mejor absorción","Trague con agua","Su médico le dirá cuánto tiempo tomarlo según sus niveles en sangre"],dosageWarning:"Tómelo siempre exactamente como se le indicó. No tome más de lo indicado.",side:["Generalmente bien tolerada a dosis recomendadas","A dosis muy altas: náuseas, debilidad u orina frecuente","Siga la dosa recomendada por su médico"]}},
+  clopidogrel:{en:{name:"Clopidogrel (Plavix)",purpose:["Prevents blood clots and reduces the risk of heart attack and stroke","Often prescribed after a heart attack or stent placement"],how:["Take 75 mg once a day, with or without food","Take at the same time every day","Do not stop without talking to your doctor — stopping early can be dangerous"],dosageWarning:"Never stop this medicine suddenly after a heart procedure. Consult your doctor first.",side:["Increased risk of bleeding — cuts may take longer to stop","Upset stomach or diarrhea","Easy bruising"]},es:{name:"Clopidogrel (Plavix)",purpose:["Previene coágulos de sangre y reduce el riesgo de ataque cardíaco y derrame cerebral","A menudo se receta después de un ataque cardíaco o colocación de un stent"],how:["Tome 75 mg una vez al día, con o sin comida","Tómelo a la misma hora todos los días","No lo deje sin hablar con su médico — parar antes puede ser peligroso"],dosageWarning:"Nunca deje este medicamento de repente después de un procedimiento cardíaco. Consulte a su médico.",side:["Mayor riesgo de sangrado — los cortes pueden tardar más en detenerse","Malestar estomacal o diarrea","Moretones fáciles"]}},
+  trimethoprim_sulfa:{en:{name:"Trimethoprim-Sulfamethoxazole (Bactrim)",purpose:["Treats urinary tract infections (UTIs) and certain other bacterial infections"],how:["Take 1 double-strength tablet twice a day, every 12 hours","Always take with a full glass of water","Drink plenty of fluids throughout the day to protect your kidneys"],dosageWarning:"Always take exactly as prescribed. Finish the full course.",side:["Sensitivity to sunlight — wear sunscreen outdoors","Nausea or upset stomach","Skin rash — stop and call your doctor right away if it spreads or blisters"]},es:{name:"Trimetoprima-Sulfametoxazol (Bactrim)",purpose:["Trata infecciones urinarias (ITU) y otras infecciones bacterianas"],how:["Tome 1 comprimido de doble potencia dos veces al día, cada 12 horas","Siempre tómelo con un vaso lleno de agua","Beba muchos líquidos durante el día para proteger los riñones"],dosageWarning:"Tómelo siempre exactamente como se le indicó. Termine el curso completo.",side:["Sensibilidad al sol — use protector solar al aire libre","Náuseas o malestar estomacal","Sarpullido — deje de tomarlo y llame a su médico si se extiende o ampolla"]}},
+  doxycycline:{en:{name:"Doxycycline",purpose:["Treats bacterial infections including respiratory infections, skin infections, and Lyme disease"],how:["Take 100 mg twice a day with a full glass of water","Take with food or milk to reduce stomach upset","Avoid direct sunlight — use sunscreen every day while taking this medicine"],dosageWarning:"Always take exactly as prescribed. Finish the full course.",side:["Nausea or upset stomach — take with food to help","Sensitivity to sunlight — use sunscreen every day","Do not lie down for 30 minutes after taking it"]},es:{name:"Doxiciclina",purpose:["Trata infecciones bacterianas como infecciones respiratorias, de piel y enfermedad de Lyme"],how:["Tome 100 mg dos veces al día con un vaso lleno de agua","Tómelo con comida o leche para reducir el malestar estomacal","Evite el sol directo — use protector solar todos los días mientras toma este medicamento"],dosageWarning:"Tómelo siempre exactamente como se le indicó. Termine el curso completo.",side:["Náuseas o malestar estomacal — tómelo con comida para ayudar","Sensibilidad al sol — use protector solar todos los días","No se acueste por 30 minutos después de tomarlo"]}}
+};
+
+const KEYWORDS = {
+  q1:["blood","sugar","pressure","breathing","diabetes","heart","cholesterol","pain","infection","thyroid","mood","anxiety","asthma","asma","azúcar","presión","respirat","colesterol","dolor","infección","tiroides","ánimo"],
+  q2:["daily","twice","once","inhaler","pill","food","meal","inject","morning","evening","day","día","vez","pastilla","inhalador","comida","mañana","noche","inyect"],
+  q3:["nausea","dizzy","cough","stomach","tired","bleed","rash","itch","swell","headache","constip","diarr","náusea","mareo","tos","estómago","cansancio","sangr","sarpullido","hincha","cabeza","estreñ"]
+};
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxaMYrfKlPnwhbGUKQIqko-XqVr4PdqYgT56j8Zdp7k2P9Sf7NdV0zlmtfdBRAmFsCPcA/exec";
+
+/*  State  */
+let lang = "en";
+let medKey = "";
+let preScore = 0;
+let postScore = 0;
+
+/*  Refs  */
+const $ = id => document.getElementById(id);
+
+/*  i18n strings  */
+const T = {
+  en: {
+    langLabel:"Español", selectLabel:"Choose your medication", medSelectLabel:"Medication",
+    preTitle:"Before you read — what do you know?", preSubtitle:"Answer as best you can. There are no wrong answers — this is just a baseline.",
+    pre1Label:"What is this medicine for?", pre2Label:"How will you take it?", pre3Label:"Any side effects you know of?",
+    preSubmitLabel:"Submit & continue",
+    labelPurpose:"What it does", labelHow:"How to take (This is only a general dosage information.) ", labelSide:"Side effects",
+    listenLabel:"Listen", printLabel:"Print", qrLabel:"QR Code",
+    toPostLabel:"Take the post-test →",
+    postTitle:"Now let's see what you learned", postSubtitle:"Answer in your own words — no need to be exact.",
+    post1Label:"What is this medicine for?", post2Label:"How will you take it?", post3Label:"Any side effects?",
+    postSubmitLabel:"See my results",
+    resultsTitle:"Your results", preLabel:"Before", postLabel:"After", improvLabel:"Change",
+    restartLabel:"Start over",
+    msgGood:"Great improvement! The tool helped you better understand your medication. Keep this information somewhere handy.",
+    msgNeutral:"Good effort. Review the medication card again if anything feels unclear, and ask your pharmacist or doctor any questions.",
+    sheetSent:"✓ Data saved to records",
+    sheetError:"Could not save data — please let staff know",
+    sideWarning:"If you have serious or unexpected side effects, stop taking the medicine and call your doctor or pharmacist right away.",
+    toastPrint:"Opening print view…",
+    toastQR:"QR code generated below",
+    toastListen:"Reading aloud…",
+    medBadge:"Prescription medication"
+  },
+  es: {
+    langLabel:"English", selectLabel:"Elija su medicamento", medSelectLabel:"Medicamento",
+    preTitle:"Antes de leer — ¿qué sabe?", preSubtitle:"Responda lo mejor que pueda. No hay respuestas incorrectas — esto es solo una base.",
+    pre1Label:"¿Para qué es este medicamento?", pre2Label:"¿Cómo lo tomará?", pre3Label:"¿Conoce algún efecto secundario?",
+    preSubmitLabel:"Enviar y continuar",
+    labelPurpose:"Para qué sirve", labelHow:"Cómo tomarlo", labelSide:"Efectos secundarios",
+    listenLabel:"Escuchar", printLabel:"Imprimir", qrLabel:"Código QR",
+    toPostLabel:"Hacer la prueba final →",
+    postTitle:"Ahora veamos qué aprendió", postSubtitle:"Responda con sus propias palabras — no necesita ser exacto.",
+    post1Label:"¿Para qué es este medicamento?", post2Label:"¿Cómo lo tomará?", post3Label:"¿Efectos secundarios?",
+    postSubmitLabel:"Ver mis resultados",
+    resultsTitle:"Sus resultados", preLabel:"Antes", postLabel:"Después", improvLabel:"Cambio",
+    restartLabel:"Empezar de nuevo",
+    msgGood:"¡Gran mejora! La herramienta le ayudó a entender mejor su medicamento. Guarde esta información en un lugar accesible.",
+    msgNeutral:"Buen esfuerzo. Revise la tarjeta del medicamento si algo no quedó claro, y consulte a su farmacéutico o médico.",
+    sheetSent:"✓ Datos guardados en registros",
+    sheetError:"No se pudieron guardar los datos — avise al personal",
+    sideWarning:"Si tiene efectos secundarios graves o inesperados, deje el medicamento y llame a su médico o farmacéutico de inmediato.",
+    toastPrint:"Abriendo vista de impresión…",
+    toastQR:"Código QR generado abajo",
+    toastListen:"Leyendo en voz alta…",
+    medBadge:"Medicamento con receta"
+  }
+};
+
+/*  Toast  */
+function showToast(msg, duration = 2500) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+/*  Scoring  */
+function scoreInput(inputId, keywords) {
+  const val = $(inputId).value.toLowerCase().trim();
+  if (!val || val.length < 2) return 0;
+
+  // 1. Direct keyword match (original method)
+  if (keywords.some(k => val.includes(k.toLowerCase()))) return 1;
+
+  // 2. Semantic overlap: compare patient answer against the actual med card text
+  const fieldMap = { pre1:"purpose", pre2:"how", pre3:"side", post1:"purpose", post2:"how", post3:"side" };
+  const field = fieldMap[inputId];
+  if (field && medKey && MEDS[medKey]) {
+    const raw = MEDS[medKey][lang][field] || "";
+    const medText = (Array.isArray(raw) ? raw.join(" ") : raw).toLowerCase();
+    const stopWords = new Set(["the","and","or","for","in","of","to","a","an","is","it","be","as","at","by","on","not","this","with","are","was","has","have","that","from","your","you","if","may","can","do","its","any","i","my","we","me","take","taken","used","use"]);
+    const answerWords = val.match(/[a-z]{3,}/g)?.filter(w => !stopWords.has(w)) || [];
+    const cardWords = new Set(medText.match(/[a-z]{3,}/g)?.filter(w => !stopWords.has(w)) || []);
+    // Award point if any meaningful answer word appears in or partially matches med card text
+    const overlap = answerWords.filter(w => cardWords.has(w) || [...cardWords].some(c => c.includes(w) || w.includes(c)));
+    if (overlap.length >= 1) return 1;
+  }
+  return 0;
+}
+
+/*  Render UI text  */
+function applyLang() {
+  const t = T[lang];
+  const ids = ["langLabel","selectLabel","medSelectLabel","preTitle","preSubtitle",
+    "pre1Label","pre2Label","pre3Label","preSubmitLabel","labelPurpose","labelHow",
+    "labelSide","listenLabel","printLabel","qrLabel","toPostLabel","postTitle",
+    "postSubtitle","post1Label","post2Label","post3Label","postSubmitLabel",
+    "resultsTitle","preLabel","postLabel","improvLabel","restartLabel","medBadge","qrCaption"];
+
+  ids.forEach(id => { if ($(id)) $(id).textContent = t[id]; });
+
+  if (medKey) renderMedCard();
+  // Update input placeholder for language
+  const inp = $("medInput");
+  if (inp && !medKey) inp.placeholder = lang === "es" ? "Escriba o diga el nombre del medicamento…" : "Type or say a medication name…";
+}
+
+/*  Med card  */
+function renderBullets(el, value) {
+  el.innerHTML = "";
+  const items = Array.isArray(value) ? value : (value ? [String(value).trim()] : []);
+  if (items.length > 1) {
+    const ul = document.createElement("ul");
+    ul.style.cssText = "margin:6px 0 0 16px;padding:0;font-size:15px;line-height:1.8;";
+    items.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = cap(String(item).trim());
+      ul.appendChild(li);
+    });
+    el.appendChild(ul);
+  } else {
+    // Single item — plain text, no bullet
+    const p = document.createElement("p");
+    p.style.cssText = "margin:4px 0 0;font-size:15px;line-height:1.6;";
+    p.textContent = Array.isArray(value) ? (value[0] || "") : (value || "");
+    el.appendChild(p);
+  }
+}
+
+function renderMedCard() {
+  const med = MEDS[medKey][lang];
+  $("medName").textContent = med.name;
+  renderBullets($("valPurpose"), med.purpose);
+  renderBullets($("valHow"), med.how);
+  renderBullets($("valSide"), med.side);
+
+  // Dosage warning box
+  const warnBox = $("dosageWarningBox");
+  if (med.dosageWarning) {
+    $("valDosageWarning").textContent = med.dosageWarning;
+    warnBox.classList.remove("hidden");
+  } else {
+    warnBox.classList.add("hidden");
+  }
+
+  // Side effects warning — always shown
+  $("valSideWarning").textContent = T[lang].sideWarning;
+  $("sideWarningBox").classList.remove("hidden");
+}
+
+function cap(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+
+/*  Steps  */
+function activateStep(n) {
+  [1,2,3,4].forEach(i => {
+    const el = $("step" + i);
+    el.classList.remove("active","complete");
+    if (i < n) el.classList.add("complete");
+    else if (i === n) el.classList.add("active");
+  });
+  ["pane1","pane2","pane3","pane4"].forEach((id, idx) => {
+    $(id).classList.toggle("hidden", idx + 1 !== n);
+  });
+}
+
+/*  Events  */
+
+//  Smart medication input + autocomplete 
+const MED_ALIASES = {
+  metformin:            ["metformin","metformina","glucophage"],
+  glipizide:            ["glipizide","glipizida","glucotrol"],
+  lisinopril:           ["lisinopril","lisinopril","prinivil","zestril"],
+  amlodipine:           ["amlodipine","amlodipino","norvasc"],
+  losartan:             ["losartan","losartán","cozaar","hyzaar"],
+  hydrochlorothiazide:  ["hydrochlorothiazide","hidroclorotiazida","hctz","microzide"],
+  metoprolol:           ["metoprolol","lopressor","toprol"],
+  atorvastatin:         ["atorvastatin","atorvastatina","lipitor"],
+  simvastatin:          ["simvastatin","simvastatina","zocor"],
+  albuterol:            ["albuterol","albuteral","salbutamol","proair","ventolin","proventil"],
+  fluticasone_inhaler:  ["fluticasone","fluticasona","flovent","flonase inhaler"],
+  montelukast:          ["montelukast","singulair"],
+  sertraline:           ["sertraline","sertralina","zoloft"],
+  fluoxetine:           ["fluoxetine","fluoxetina","prozac","sarafem"],
+  escitalopram:         ["escitalopram","lexapro"],
+  omeprazole:           ["omeprazole","omeprazol","prilosec"],
+  amoxicillin:          ["amoxicillin","amoxicilina","amoxil","trimox"],
+  azithromycin:         ["azithromycin","azitromicina","zithromax","z-pack","zpack"],
+  levothyroxine:        ["levothyroxine","levotiroxina","synthroid","levoxyl","tirosint"],
+  aspirin_81:           ["aspirin 81","aspirin","aspirina","aspirin low","baby aspirin","asa"],
+  warfarin:             ["warfarin","warfarina","coumadin","jantoven"],
+  furosemide:           ["furosemide","furosemida","lasix"],
+  gabapentin:           ["gabapentin","gabapentina","neurontin","gralise"],
+  ibuprofen:            ["ibuprofen","ibuprofeno","advil","motrin"],
+  cetirizine:           ["cetirizine","cetirizina","zyrtec"],
+  vitamin_d:            ["vitamin d","vitamina d","vitamin d3","cholecalciferol","colecalciferol"],
+  clopidogrel:          ["clopidogrel","plavix"],
+  trimethoprim_sulfa:   ["trimethoprim","trimetoprima","bactrim","sulfamethoxazole","sulfametoxazol","tmp-smx","septra"],
+  doxycycline:          ["doxycycline","doxiciclina","vibramycin","oracea"],
+};
+
+function fuzzyMatch(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  return Object.keys(MED_ALIASES).filter(key =>
+    MED_ALIASES[key].some(a => a.startsWith(q) || a.includes(q))
+  );
+}
+
+function selectMed(key) {
+  medKey = key;
+  const name = MEDS[key][lang].name;
+  $("medInput").value = name;
+  closeSuggestions();
+  $("preSubmitBtn").disabled = false;
+  ["pre1","pre2","pre3"].forEach(id => $(id).value = "");
+  showToast("✓ " + name);
+}
+
+function closeSuggestions() {
+  $("medSuggestions").classList.remove("open");
+  $("medSuggestions").innerHTML = "";
+}
+
+function renderSuggestions(matches, query) {
+  const ul = $("medSuggestions");
+  ul.innerHTML = "";
+  if (!matches.length) { ul.classList.remove("open"); return; }
+  matches.forEach(key => {
+    const name = MEDS[key][lang].name;
+    const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    const idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx >= 0) {
+      li.innerHTML = name.slice(0, idx) +
+        "<mark>" + name.slice(idx, idx + query.length) + "</mark>" +
+        name.slice(idx + query.length);
+    } else {
+      li.textContent = name;
+    }
+    li.addEventListener("mousedown", (e) => { e.preventDefault(); selectMed(key); });
+    ul.appendChild(li);
+  });
+  ul.classList.add("open");
+}
+
+$("medInput").addEventListener("input", () => {
+  const q = $("medInput").value;
+  if (medKey) { medKey = ""; $("preSubmitBtn").disabled = true; }
+  renderSuggestions(fuzzyMatch(q), q);
+});
+
+$("medInput").addEventListener("blur", () => {
+  setTimeout(closeSuggestions, 150);
+});
+
+$("medInput").addEventListener("keydown", (e) => {
+  const ul = $("medSuggestions");
+  const items = [...ul.querySelectorAll("li")];
+  const activeEl = ul.querySelector("li.active");
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    const next = activeEl ? activeEl.nextElementSibling : items[0];
+    if (next) { activeEl?.classList.remove("active"); next.classList.add("active"); }
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    const prev = activeEl ? activeEl.previousElementSibling : items[items.length - 1];
+    if (prev) { activeEl?.classList.remove("active"); prev.classList.add("active"); }
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    const activeMatch = activeEl ? fuzzyMatch($("medInput").value)[0] : null;
+    if (activeMatch) {
+      selectMed(activeMatch);
+    } else {
+      closeSuggestions();
+    }
+  } else if (e.key === "Escape") {
+    closeSuggestions();
+  }
+});
+
+$("medInput").addEventListener("change", () => {
+  const q = $("medInput").value.trim();
+  const localMatch = fuzzyMatch(q)[0];
+  if (localMatch) {
+    selectMed(localMatch);
+  }
+});
+
+// Language toggle
+$("langBtn").addEventListener("click", () => {
+  lang = lang === "en" ? "es" : "en";
+  applyLang();
+});
+
+// Pre-test submit
+$("preSubmitBtn").addEventListener("click", () => {
+  if (!medKey) return;
+  preScore = scoreInput("pre1", KEYWORDS.q1) + scoreInput("pre2", KEYWORDS.q2) + scoreInput("pre3", KEYWORDS.q3);
+  renderMedCard();
+  activateStep(2);
+});
+
+// Listen
+$("listenBtn").addEventListener("click", () => {
+  if (!medKey) return;
+  const med = MEDS[medKey][lang];
+  const toText = v => Array.isArray(v) ? v.join(". ") : v;
+  const utterance = new SpeechSynthesisUtterance(`${med.name}. ${toText(med.purpose)}. ${toText(med.how)}. ${toText(med.side)}`);
+  utterance.lang = lang === "es" ? "es-US" : "en-US";
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utterance);
+  showToast(T[lang].toastListen);
+});
+
+// Print
+$("printBtn").addEventListener("click", () => {
+  if (!medKey) return;
+  const med = MEDS[medKey][lang];
+  const t = T[lang];
+  const w = window.open("", "_blank");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${med.name}</title>
+    <style>body{font-family:Arial,sans-serif;padding:40px;max-width:520px;margin:auto;}
+    h1{margin-bottom:4px;}p{line-height:1.6;}b{display:block;margin-top:16px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#666;}</style>
+    </head><body>
+    <h1>${med.name}</h1>
+    <b>${t.labelPurpose}</b><p>${Array.isArray(med.purpose)?med.purpose.map(b=>`• ${b}`).join("<br>"):med.purpose}</p>
+    <b>${t.labelHow}</b><p>${Array.isArray(med.how)?med.how.map(b=>`• ${b}`).join("<br>"):med.how}</p>
+    <b>${t.labelSide}</b><p>${Array.isArray(med.side)?med.side.map(b=>`• ${b}`).join("<br>"):med.side}</p>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+  showToast(T[lang].toastPrint);
+});
+
+// QR — encodes the hosted page URL
+const HOSTED_URL = "https://your-clinic.example.com/medClarity.html";
+
+$("qrBtn").addEventListener("click", () => {
+  if (!medKey) return;
+  const panel = $("qrPanel");
+  // Toggle off if already showing
+  if (!panel.classList.contains("hidden")) {
+    panel.classList.add("hidden");
+    return;
+  }
+  const canvas = $("qrCanvas");
+  QRCode.toCanvas(canvas, HOSTED_URL, { width: 180, margin: 2 }, err => {
+    if (!err) {
+      $("qrUrl").textContent = HOSTED_URL;
+      panel.classList.remove("hidden");
+      showToast(T[lang].toastQR);
+    }
+  });
+});
+
+
+
+// To post-test
+$("toPostBtn").addEventListener("click", () => {
+  ["post1","post2","post3"].forEach(id => $(id).value = "");
+  activateStep(3);
+});
+
+// Post-test submit
+$("postSubmitBtn").addEventListener("click", () => {
+  postScore = scoreInput("post1", KEYWORDS.q1) + scoreInput("post2", KEYWORDS.q2) + scoreInput("post3", KEYWORDS.q3);
+  const improvement = postScore - preScore;
+
+  $("preVal").textContent = preScore + "/3";
+  $("postVal").textContent = postScore + "/3";
+  const sign = improvement > 0 ? "+" : improvement < 0 ? "" : "±";
+  $("improvVal").textContent = sign + improvement;
+  $("improvVal").className = "result-stat-value" + (improvement > 0 ? " positive" : "");
+
+  const t = T[lang];
+  const msgEl = $("resultMessage");
+  if (improvement > 0 || postScore >= 2) {
+    msgEl.className = "result-message good";
+    msgEl.textContent = t.msgGood;
+  } else {
+    msgEl.className = "result-message neutral";
+    msgEl.textContent = t.msgNeutral;
+  }
+
+  activateStep(4);
+  const medName = MEDS[medKey] && MEDS[medKey][lang] ? MEDS[medKey][lang].name : medKey;
+  sendToSheet(medName, preScore, postScore, improvement, lang, t);
+});
+
+// Restart
+$("restartBtn").addEventListener("click", () => {
+  medKey = "";
+  preScore = 0;
+  postScore = 0;
+  $("medInput").value = ""; closeSuggestions();
+  $("preSubmitBtn").disabled = true;
+  ["pre1","pre2","pre3","post1","post2","post3"].forEach(id => $(id).value = "");
+  $("qrCanvas").style.display = "none";
+  $("qrPanel").classList.add("hidden");
+  $("sheetStatus").innerHTML = "";
+  $("resultMessage").textContent = "";
+  activateStep(1);
+});
+
+/* Google Sheets */
+async function sendToSheet(med, pre, post, imp, language, t) {
+  const statusEl = $("sheetStatus");
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ medication: med, preScore: pre, postScore: post, improvement: imp, language, timestamp: new Date().toISOString() })
+    });
+    statusEl.innerHTML = `<span class="status-badge sent">${t.sheetSent}</span>`;
+  } catch (err) {
+    statusEl.innerHTML = `<span class="status-badge error">${t.sheetError}</span>`;
+    console.error("Sheet error:", err);
+  }
+}
+
+/*  Init  */
+applyLang();
+activateStep(1);
+
+/* ══════════════════════════════════════════════
+   VOICE INPUT
+══════════════════════════════════════════════ */
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let activeBtn = null;
+
+if (!SpeechRecognition) {
+  // Hide all mic buttons gracefully
+  document.body.classList.add("no-voice-support");
+} else {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    if (activeBtn) activeBtn.classList.add("listening");
+  };
+
+  recognition.onend = () => {
+    if (activeBtn) {
+      activeBtn.classList.remove("listening");
+      activeBtn.textContent = "🎤";
+    }
+    activeBtn = null;
+  };
+
+  recognition.onerror = (e) => {
+    if (activeBtn) {
+      activeBtn.classList.remove("listening");
+      activeBtn.textContent = "🎤";
+    }
+    activeBtn = null;
+    if (e.error === "not-allowed") {
+      showToast("Microphone access denied. Please allow it in your browser.", 3500);
+    }
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    handleVoiceResult(transcript);
+  };
+}
+
+let voiceMode = null; // "select" | "input"
+let voiceTarget = null; // input element id for "input" mode
+
+function startVoice(btn, mode, targetId = null) {
+  if (!recognition) return;
+
+  // Stop if already listening to the same button
+  if (activeBtn === btn) {
+    recognition.stop();
+    return;
+  }
+
+  // Stop any previous session
+  if (activeBtn) {
+    recognition.stop();
+    activeBtn.classList.remove("listening");
+    activeBtn.textContent = "🎤";
+  }
+
+  voiceMode = mode;
+  voiceTarget = targetId;
+  activeBtn = btn;
+  btn.textContent = "⏹";
+
+  recognition.lang = lang === "es" ? "es-US" : "en-US";
+
+  try {
+    recognition.start();
+  } catch(e) {
+    // Already started edge case
+    recognition.stop();
+  }
+}
+
+function handleVoiceResult(transcript) {
+  if (voiceMode === "select") {
+    const matches = fuzzyMatch(transcript);
+    if (matches.length) {
+      selectMed(matches[0]);
+    } else {
+      // Not in local list — try AI
+      $("medInput").value = transcript;
+      closeSuggestions();
+      const match = fuzzyMatch(transcript)[0];
+      if (match) {
+        selectMed(match);
+      } else {
+        showToast("Medication not found. Try typing the name.", 3000);
+      }
+    }
+  } else if (voiceMode === "input" && voiceTarget) {
+    const el = $(voiceTarget);
+    if (el) {
+      el.value = transcript;
+    }
+  }
+}
+
+// Wire up mic buttons on text inputs
+document.querySelectorAll(".mic-btn[data-target]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    startVoice(btn, "input", btn.dataset.target);
+  });
+});
+
+// Wire up medication selector mic button
+const micSelectBtn = $("micSelect");
+if (micSelectBtn) {
+  micSelectBtn.addEventListener("click", () => {
+    startVoice(micSelectBtn, "select");
+    if (recognition && activeBtn === micSelectBtn) {
+      showToast("Listening… say a medication name", 2000);
+    }
+  });
+}
+</script>
+</body>
+</html>
